@@ -2,6 +2,11 @@ const express = require("express");
 const User = require('../models/User');
 const router = express.Router();
 const { body, validationResult } = require('express-validator');
+const bcrypt = require('bcryptjs'); //importing for generating hash of each password
+var jwt = require('jsonwebtoken'); // for creating secure connection between client and server
+
+
+const JWT_SECRET = "jwtsecret@1"
 
 // we will use post method otherwise user can get our data on their end which we dont want to show to our user
 // router.get('/',async (req,res)=>{
@@ -27,15 +32,27 @@ router.post('/createuser',[
       if(user){
         return res.status(400).json({error: "User already exist with this email address"})
       }
+
+      //salt and secondaryPass return promises thats why we need to add "await" 
+      const salt = await bcrypt.genSalt(10); // generating salt of 10 chacracter for password hash
+      const secondaryPass =await bcrypt.hash(req.body.password, salt); // creates hash for password+salt
+      // create a new user
         user = await User.create({
           name: req.body.name,
           email: req.body.email,
-          password: req.body.password
+          password: secondaryPass
         })
-      
-        res.json(user)
+        const data = {
+          user:{
+            id:user.id
+          }
+        }
+        const authToken = jwt.sign(data,JWT_SECRET); //creating token which we will send to our user to login next time with token
+        res.json({authToken})//sending token to user end
           
-    } catch (error){
+    }
+    //catch errors
+    catch (error){
       console.error(error.message);
       res.status(500).send("Error occured");
     }
