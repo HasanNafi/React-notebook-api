@@ -3,12 +3,16 @@ const mongoose = require('mongoose');
 const { Schema } = mongoose;
 
 const NotesSchema = new Schema({
+  user:{
+    type: mongoose.Schema.Types.ObjectId,
+    ref:'user'
+  },
   title:{
     type:String,
     required: true
   },
   description:{
-    type:email,
+    type:String,
     required: true
   },
   tag:{
@@ -16,7 +20,7 @@ const NotesSchema = new Schema({
     default:"General"
   },
   date:{
-    type:date,
+    type:Date,
     default: Date.now
   },
 });

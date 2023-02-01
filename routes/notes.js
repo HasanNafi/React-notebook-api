@@ -1,9 +1,55 @@
 const express = require("express");
 const router = express.Router();
+var fetchuser = require("../middleware/fetchuser"); // fetching user credentials from middleware
+const Note = require("../models/Notes");
+const { body, validationResult } = require('express-validator');
 
-router.get('/getUserNotes',(req,res)=>{
-    
-    res.json([])
-})
+//============================================================================================================
+//ROUTE:1 =>----------fetch all user details using : Get "/api/notes/fetchallnotes" .login required
+router.get("/fetchallnotes", fetchuser, async (req, res) => {
+  try {
+    const notes = await Note.find({ user: req.user.id });
+    res.json(notes);
+  } catch (error) {
+    console.error(error.message);
+    res.status(500).send("Internal server error");
+  }
+});
+
+
+//==============================================================================================================
+//ROUTE:2 =>----------add new notes using : POST "/api/notes/addnote" .login required
+router.post(
+  "/addnote",
+  fetchuser,
+  [
+    body("title", "Enter a title").isLength({ min: 3 }),
+    // description must be at least 5 chars long
+    body("description", "description must be at least 5 character").isLength({
+      min: 5,
+    }),
+  ],
+  async (req, res) => {
+    try {
+      const { title, description, tag } = req.body;
+      // Finds the validation errors in this request and wraps them in an object with handy functions
+      const errors = validationResult(req);
+      if (!errors.isEmpty()) {
+        return res.status(400).json({ errors: errors.array() });
+      }
+      const note = new Note({
+        title,
+        description,
+        tag,
+        user: req.user.id,
+      });
+      const saveNote = await note.save();
+      res.json(saveNote);
+    } catch (error) {
+      console.error(error.message);
+      res.status(500).send("Internal server error");
+    }
+  }
+);
 
 module.exports = router;
